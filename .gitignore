@@ -1,0 +1,19 @@
+# Latex files
+*.pdf
+
+# C++ Files
+build/
+bin/
+output/
+
+# cmake
+Makefile
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+
+# Python files
+*.pyc
+
+# Noweb files
+noweb/
