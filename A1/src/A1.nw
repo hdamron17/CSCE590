@@ -1,0 +1,479 @@
+\documentclass[10pt]{article}
+\usepackage{noweb}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{subfig}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.8}
+\usepgfplotslibrary{groupplots}
+
+\title{CSCE 590 Assignment 1}
+\author{Hunter Damron}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section*{Part 1: Single Images Operations}
+For this section, the goal is to report on the differences between various image file formats.
+
+We begin by defining a [[multisave]] function which loads an image of one format and saves the same image in each of the other three required formats. The formats used are [[jpg]], [[png]], [[ppm]], and [[tiff]].
+
+<<[[multisave]] function>>=
+const std::array<std::string, 4> file_types = {"jpg", "png", "ppm", "tiff"};
+
+void multisave(const std::string& file_type, const std::string& file_name,
+                                               const std::string& rel_path) {
+  // input file path is `{rel_path}/images/{file_name}.{file_type}`
+
+  cv::Mat image;
+  image = cv::imread(rel_path + "/images/" + file_name + "." + file_type,
+                                                         cv::IMREAD_COLOR);
+  if(!image.data) {
+    std::cout << "Failed to read " << file_type << " image "
+              << (file_name + "." + file_type) << std::endl;
+    return;
+  }
+
+  for (int i = 0; i < file_types.size(); ++i) {
+    if (file_types[i] != file_type)
+      cv::imwrite(rel_path + "/output/" + file_name + "_to_"
+                  + file_types[i] + "." + file_types[i], image);
+  }
+}
+
+@ Next is a simple function to calculate bit depth and image min, max, and mean intensities.
+
+<<[[image_info]] function>>=
+void image_info(const std::string& file_type, const std::string& file_name,
+                                               const std::string& rel_path) {
+  // input file path is `{rel_path}/{file_name}.{file_type}`
+
+  cv::Mat image;
+  image = cv::imread(rel_path + "/" + file_name + "." + file_type,
+                                                        cv::IMREAD_COLOR);
+  if(!image.data) {
+   std::cout << "Failed to read " << file_type << " image "
+             << (file_name + "." + file_type) << std::endl;
+   return;
+  }
+
+  int pdepth = image.depth();
+
+  double pmin = 255, pmax = 0, ptotal = 0;
+  for (int i = 0; i < image.size().height; ++i) {
+    for (int j = 0; j < image.size().width; ++j) {
+      const cv::Vec3b& p = image.at<cv::Vec3b>(i, j);
+      int intensity = (p[0] + p[1] + p[2]) / 3.0;
+      if (intensity < pmin)
+        pmin = intensity;
+      if (intensity > pmax)
+        pmax = intensity;
+      ptotal += intensity;
+    }
+  }
+  double pmean = ptotal / (image.size().height * image.size().width);
+
+  std::ofstream out;
+  out.open(rel_path + "/output/" + file_type + "_data.tex");
+  out << file_type << "_depth = " << pdepth << std::endl;
+  out << file_type << "_min = " << pmin << std::endl;
+  out << file_type << "_max = " << pmax << std::endl;
+  out << file_type << "_mean = " << pmean << std::endl;
+  out.close();
+}
+
+@ Now we use this [[multisave]] function on various images to produce the matrix of images seen in Table \ref{fig:image_matrix}.
+
+<<Q1.cpp>>=
+<<Include>>
+<<[[multisave]] function>>
+<<[[image_info]] function>>
+
+int main(int argc, char* argv[]) {
+  <<Command line args>>
+
+  multisave("png",  "png_image",  path);
+  multisave("jpg",  "jpg_image",  path);
+  multisave("ppm",  "ppm_image",  path);
+  multisave("tiff", "tiff_image", path);
+
+  image_info("jpg",  "images/jpg_image",  path);
+  image_info("png",  "output/jpg_image_to_png",  path);
+  image_info("ppm",  "output/jpg_image_to_ppm",  path);
+  image_info("tiff",  "output/jpg_image_to_tiff",  path);
+}
+
+@
+
+\begin{figure}[h]
+  \resizebox{\textwidth}{!}{
+    \begin{tabular}{|c|c|c|c|c|}
+      \hline  ~ & PNG & JPEG & TIFF & PPM \\ \hline
+      PNG  & \includegraphics[width=0.24\textwidth]{A1/images/png_image} &
+             \includegraphics[width=0.24\textwidth]{A1/output/png_image_to_jpg} &
+             \includegraphics[width=0.24\textwidth]{A1/output/png_image_to_tiff} &
+             \includegraphics[width=0.24\textwidth]{A1/output/png_image_to_ppm} \\ \hline
+      JPG  & \includegraphics[width=0.24\textwidth]{A1/output/jpg_image_to_png} &
+             \includegraphics[width=0.24\textwidth]{A1/images/jpg_image} &
+             \includegraphics[width=0.24\textwidth]{A1/output/jpg_image_to_tiff} &
+             \includegraphics[width=0.24\textwidth]{A1/output/jpg_image_to_ppm} \\ \hline
+      TIFF & \includegraphics[width=0.24\textwidth]{A1/output/tiff_image_to_png} &
+             \includegraphics[width=0.24\textwidth]{A1/output/tiff_image_to_jpg} &
+             \includegraphics[width=0.24\textwidth]{A1/images/tiff_image} &
+             \includegraphics[width=0.24\textwidth]{A1/output/tiff_image_to_ppm} \\ \hline
+      PPM  & \includegraphics[width=0.24\textwidth]{A1/output/ppm_image_to_png} &
+             \includegraphics[width=0.24\textwidth]{A1/output/ppm_image_to_jpg} &
+             \includegraphics[width=0.24\textwidth]{A1/output/ppm_image_to_tiff} &
+             \includegraphics[width=0.24\textwidth]{A1/images/ppm_image} \\ \hline
+    \end{tabular}
+  }
+  \caption{Matrix of images before and after conversion (left axis is input type; top axis is output type)}
+  \label{fig:image_matrix}
+\end{figure}
+
+\subsection*{Discussion}
+For this discussion of image formats, we will look at the second row of Table \ref{fig:image_matrix} (pengins). In the first row of Table \ref{fig:formats_table}, we see that JPG has a significantly smaller file size than the other image formats because it is using a lossy compression which is able to reduce the amount of required data significantly. PNG and TIFF are closely related in size because they both are using lossless compression. The PPM image is much larger than the rest because it does not perform any compression and does not store bytes efficiently. This ppm image is actually the binary version because of OpenCV's saving scheme, but if it were a true ASCII PPM image, the size would be larger still.
+
+  Because the images are essentially the same in each format after being rendered (even in lossy compression formats like JPG), the intensity values and pixel depth are the same among formats. The pixel depth is consistently 8 bits per color, and the intensities have minimum of 0, maximum of 255, and mean of 144.63.
+
+\begin{figure}[h]
+  \begin{tabular}{|c|c|c|c|c|}
+    \hline  ~ & PNG & JPEG & TIFF & PPM \\ \hline
+    File Size & 22.8 MB & 3.8 MB & 21 MB & 36 MB \\ \hline
+  \end{tabular}
+  \caption{Miscellaneous information about single image saved in multiple file formats}
+  \label{fig:formats_table}
+\end{figure}
+
+\section*{Part 2: Histogram}
+For this section, the goal is to create a histogram of intensities in an image.
+
+We begin with a function whic saves the histogram to a csv file for later plotting.
+
+<<[[saveMatCsv]] function>>=
+template<typename T> void saveMatCsv(const cv::Mat& mat, const std::string& path) {
+  std::ofstream out;
+  out.open(path);
+  for (int i = 0; i < mat.size().height; ++i) {
+    for (int j = 0; j < mat.size().width; ++j) {
+      out << mat.at<T>(i, j);
+      if (j + 1 != mat.size().width)
+        out << ", ";
+    }
+    out << std::endl;
+  }
+  out.close();
+}
+
+@ Now we have a function which converts a 3-channel color image to grey single channel image. It does this by simply averaging the red, green, and blue channels for intensity.
+<<[[rgb2grey]] function>>=
+cv::Mat rgb2grey(cv::Mat image) {
+  cv::Mat grey(image.size(), CV_32F);
+  for (int i = 0; i < image.size().height; ++i) {
+    for (int j = 0; j < image.size().width; ++j) {
+      const cv::Vec3b& p = image.at<cv::Vec3b>(i, j);
+      grey.at<float>(i, j) = (p[0] + p[1] + p[2]) / 255.0 / 3;
+    }
+  }
+  return grey;
+}
+
+@ Finally, the histogram function takes the intensity of each pixel and finds the integer dividend of the intensity and the size of each category. This gives an index in the resulting histogram. Each pixel increments its respective data point in the histogram to count the number of pixels in each bin.
+<<[[my_calcHist]] function>>=
+cv::Mat my_calcHist(cv::Mat image, int bins, bool is_uint8=true) {
+  float category_size = 1.0 / (bins-1);
+  float count_pixel = 1.0 / (image.size().height * image.size().width);
+
+  cv::Mat hist(bins, 2, CV_32F);
+
+  for (int i = 0; i < bins; ++i) {
+    hist.at<float>(i, 0) = i * category_size * 255.0;
+  }
+
+  hist.col(1) = cv::Mat::zeros(bins, 1, CV_32F);
+
+  for (int i = 0; i < image.size().height; ++i) {
+    for (int j = 0; j < image.size().width; ++j) {
+      float intensity;
+      if (is_uint8)
+        intensity = image.at<uint8_t>(i, j) / 255.0;
+      else
+        intensity = image.at<float>(i, j);
+      int category = floor(intensity / category_size);
+      hist.at<float>(category, 1) += count_pixel;  // Count this category
+    }
+  }
+  return hist;
+}
+
+@ We use the [[calcHist]] function provided by OpenCV as a comparison. It takes some setting up because it is meant to be generalized so we do that setting up in a function here. The details are not significant.
+<<[[cv_calcHist]] function>>=
+cv::Mat cv_calcHist(cv::Mat image, int bins) {
+  cv::Mat intensity, hist;
+  cvtColor(image, intensity, CV_RGB2GRAY);
+
+  float histSize_f[2] = {0, 255};
+  const float* histSizePtr = histSize_f;
+  cv::calcHist(&intensity, 1, 0, cv::Mat(), hist, 1, &bins, &histSizePtr, true);
+
+  hist /= intensity.total();
+
+  cv::Mat enumHist(hist.size().height, 2, hist.type());  // hist matrix with bins labelled
+  for (int i = 0; i < enumHist.size().height; ++i) {
+    enumHist.at<float>(i, 0) = i * 255 / (bins-1);
+    enumHist.at<float>(i, 1) = hist.at<float>(i, 1);
+  }
+
+  return enumHist;
+}
+
+@ Now the main function for part 2 loads an image and runs it through the provided functions for intensity as well as each color channel.
+
+<<Q2.cpp>>=
+<<Include>>
+
+<<[[saveMatCsv]] function>>
+<<[[rgb2grey]] function>>
+<<[[my_calcHist]] function>>
+<<[[cv_calcHist]] function>>
+
+int main(int argc, char* argv[]) {
+  <<Command line args>>
+
+  image = cv::imread(path + "/images/base_image.png", cv::IMREAD_COLOR);
+  if(!image.data) {
+    std::cout << "Failed to read image" << std::endl;
+    return 1;
+  }
+
+  cv::Mat grey = rgb2grey(image);
+  cv::Mat my_hist = my_calcHist(grey, 256, false);
+  cv::Mat cv_hist = cv_calcHist(image, 256);
+
+  cv::Mat bgr[3];
+  cv::Mat r_hist, g_hist, b_hist;
+  cv::split(image, bgr);
+
+  r_hist = my_calcHist(bgr[2], 256);
+  g_hist = my_calcHist(bgr[1], 256);
+  b_hist = my_calcHist(bgr[0], 256);
+
+  saveMatCsv<float>(my_hist, path + "/output/my_histogram.csv");
+  saveMatCsv<float>(cv_hist, path + "/output/cv_histogram.csv");
+
+  saveMatCsv<float>(r_hist, path + "/output/r_histogram.csv");
+  saveMatCsv<float>(g_hist, path + "/output/g_histogram.csv");
+  saveMatCsv<float>(b_hist, path + "/output/b_histogram.csv");
+}
+
+@ The resulting histograms can be seen in \ref{fig:hist}
+
+\begin{figure}[h]
+  \centering
+
+  \resizebox{\textwidth}{!}{
+  \pgfplotsset{scaled y ticks=false}
+  \begin{tikzpicture}
+    \pgfplotsset{/pgf/bar width=1}
+    \begin{groupplot}[
+        group style={
+            group name=histograms,
+            group size=5 by 1,
+            ylabels at=edge left,
+            yticklabels at=edge left,
+            horizontal sep=5pt
+        },
+        ybar, xtick distance=50,
+        title={Intensity Histogram},
+        xlabel={Pixel Intensity (0 to 255)},
+        ylabel={Count of Pixels with specified intensity},
+        ymin=0, ymax=0.06
+      ]
+      \nextgroupplot
+      \addplot [fill=gray] table [col sep=comma] {A1/output/my_histogram.csv};
+      \nextgroupplot
+      \addplot [fill=gray] table [col sep=comma] {A1/output/cv_histogram.csv};
+      \nextgroupplot
+      \addplot [fill=red] table [col sep=comma] {A1/output/r_histogram.csv};
+      \nextgroupplot
+      \addplot [fill=green] table [col sep=comma] {A1/output/g_histogram.csv};
+      \nextgroupplot
+      \addplot [fill=blue] table [col sep=comma] {A1/output/g_histogram.csv};
+    \end{groupplot}
+  \end{tikzpicture}
+  }
+
+  \caption{Image Histograms. From left to right: intensity histogram by my calculation, intensity histogram by OpenCV calculation, red histogram, green histogram, blue histogram}
+  \label{fig:hist}
+\end{figure}
+
+\section*{Part 4: Single Images Operations}
+For this section, the goal is to transform between RGB and HSI color models in order to invert the intensity of an image. We will provide a function to apply on each pixel, transforming a 3-channel RGB pixel by inverting its intensity.
+
+We begin with a function to transform from the RGB color model to HSI model. The equations necessary is provided in the lectures.
+
+<<[[rgb2hsi]] function>>=
+cv::Vec3d rgb2hsi(const cv::Vec3b& p) {
+  cv::Vec3d rgb, rgb_unit, hsi;
+
+  rgb = p;  // create Vec3d for floating point operations
+  rgb /= 255;  // put each of rgb into [0, 1]
+
+  double R = rgb[0], G = rgb[1], B = rgb[2];
+  double theta = acos(0.5 * ((R-G) + (R-B)) / sqrt((R-G) * (R-G) + (R-B) * (G-B)))
+                 / (2 * M_PI);  // theta in range [0, 1)
+
+  hsi[0] = (B <= G) ? theta : 1 - theta;  // Set hue
+  hsi[2] = (rgb[0] + rgb[1] + rgb[2]) / 3;  // Set intensity
+  hsi[1] = 1 - 1 / hsi[2] * fmin(rgb[0], fmin(rgb[1], rgb[2]));  // Set saturation
+
+  if (p[0] == p[1] && p[1] == p[2]) {
+    // In this case there will be a singularity where
+    //   hue is arbitrary so set hue and saturation to 0
+    hsi[0] = 0;
+    hsi[1] = 0;
+  }
+
+  return hsi;
+}
+
+@ Next we provide a function to transform back from HSI to RGB to preserve the original model when inverting. These equations are also provided in the lecture.
+
+<<[[rsi2rgb]] function>>=
+cv::Vec3d hsi2rgb(const cv::Vec3d& p) {
+  cv::Vec3d hsi, gb_sector, rgb;
+
+  // Set gb_sector to values as if hue is in RG sector then move them around if necessary
+  double H = fmod(p[0], 1/3.0) * 2 * M_PI,  S = p[1],  I = p[2];
+  gb_sector[0] = I * (1 - S);
+  gb_sector[1] = I * (1 + (S * cos(H)) / (cos(M_PI / 3 - H)));
+  gb_sector[2] = 3 * I - (gb_sector[0] + gb_sector[1]);
+
+  for (int i = 0; i < 3; ++i) {
+    // Truncate to valid range
+    if (gb_sector[i] < 0)
+      gb_sector[i] = 0;
+    if (gb_sector[i] > 1)
+      gb_sector[i] = 1;
+  }
+
+  // Rearrange colors depending on which sector hue is in
+  if (p[0] < 1.0 / 3) {
+    // RG sector: R->B, G->R, B->G
+    rgb[0] = gb_sector[1];
+    rgb[1] = gb_sector[2];
+    rgb[2] = gb_sector[0];
+  } else if (p[0] < 2.0 / 3) {
+    // GB sector: copy gb_sector exactly
+    rgb = gb_sector;
+  } else {
+    // BR sector: R->G, G->B, B->R
+    rgb[0] = gb_sector[2];
+    rgb[1] = gb_sector[0];
+    rgb[2] = gb_sector[1];
+  }
+
+  return rgb;
+}
+
+@ Finally, we put the pieces together to form a function to invert a single pixel by converting to HSI, setting the new intensity $I' = 1-I$ where I is the original intensity, and converting back to RGB
+
+<<[[invertPixel]] function>>=
+<<[[rgb2hsi]] function>>
+<<[[rsi2rgb]] function>>
+cv::Vec3b invertPixel(const cv::Vec3b& p) {
+  cv::Vec3d hsi, hsi_inv, rgb_inv;
+
+  hsi = rgb2hsi(p);
+
+  hsi_inv = hsi;
+  hsi_inv[2] = 1 - hsi_inv[2];  // Set hsi_inv to hsi and invert the intensity
+
+  rgb_inv = hsi2rgb(hsi_inv);
+  return rgb_inv * 255;
+}
+
+<<[[invertIntensity]] function>>=
+<<[[invertPixel]] function>>
+cv::Mat invertIntensity(const cv::Mat& image) {
+  cv::Mat inverted(image.size(), image.type());
+
+  for (int i = 0; i < image.size().height; ++i) {
+    for (int j = 0; j < image.size().width; ++j) {
+      inverted.at<cv::Vec3b>(i, j) = invertPixel((image.at<cv::Vec3b>(i, j)));
+    }
+  }
+
+  return inverted;
+}
+
+@ For the main function of part 4, we load an image and apply the [[invertIntensity]] function.
+
+<<Q4.cpp>>=
+<<Include>>
+<<[[invertIntensity]] function>>
+
+int main(int argc, char* argv[]) {
+  <<Command line args>>
+
+  image = cv::imread(path + "/images/base_image.png", cv::IMREAD_COLOR);
+  if(!image.data) {
+    std::cout << "Failed to read image" << std::endl;
+    return 1;
+  }
+
+  cv::Mat inverted = invertIntensity(image);
+
+  if (display) {
+    cv::imshow("Inverted image", inverted);
+    cv::waitKey(0);
+  }
+
+  imwrite(path + "/output/image_inverted.png", inverted);
+}
+
+@ The inverted image and its original can be seen in Figure \ref{fig:image_inverted}.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.49\textwidth]{A1/images/base_image} \hfill%
+  \includegraphics[width=0.49\textwidth]{A1/output/image_inverted}
+  \caption{Original image (left) and image inverted (right)}
+  \label{fig:image_inverted}
+\end{figure}
+
+\section*{Common Code Sections}
+
+This section provides several insignificant code snippets which are used by the other code sections.
+
+<<Include>>=
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+
+#include <iostream>
+#include <cmath>
+#include <array>
+#include <fstream>
+
+<<Command line args>>=
+cv::Mat image;
+std::string path;
+bool display;
+if (argc == 2 || (argc == 3 && std::string("display") == argv[2])) {
+  display = true;
+} else if (argc == 3 && std::string("nodisplay") == (argv[2])) {
+  display = false;
+} else {
+  std::cout << "Usage: `A1_Q4 <data_directory> [nodisplay|display]`" << std::endl
+            << "  where data_directory contains subdirectories `images` and `output`"
+            << "  and nodisplay or display is optional (display is on by default)"
+            << std::endl;
+  return 1;
+}
+path = argv[1];
+@
+
+\end{document}

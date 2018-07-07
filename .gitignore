@@ -19,3 +19,10 @@ cmake_install.cmake
 
 # Noweb files
 noweb/
+
+# Mac
+.DS_Store
+
+# Misc
+tar/
+*.tar.gz
