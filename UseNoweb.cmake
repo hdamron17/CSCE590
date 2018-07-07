@@ -60,7 +60,7 @@ function(noweave prefix noweb_file)
     PRE_BUILD
     OUTPUT ${out_file_abs}
     DEPENDS ${input_file}
-    COMMAND ${NOWEAVE_CMD} -index -autodefs c -delay ${input_file} > ${out_file_abs}
+    COMMAND ${NOWEAVE_CMD} -index -delay ${input_file} > ${out_file_abs}
   )
   add_custom_target(${prefix}_${noweb_file_name}_tex ALL DEPENDS ${out_file_abs})
 endfunction()
