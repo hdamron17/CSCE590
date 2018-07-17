@@ -16,6 +16,8 @@ list(APPEND CMAKE_TOP_LEVEL_FILES
   CMakeLists.txt
   UseLATEX.cmake
   UseNoweb.cmake
+  README.md
+  .gitignore
 )
 
 set_property(DIRECTORY APPEND PROPERTY ADDITIONAL_MAKE_CLEAN_FILES bin build)
