@@ -111,22 +111,22 @@ int main(int argc, char* argv[]) {
   \resizebox{\textwidth}{!}{
     \begin{tabular}{|c|c|c|c|c|}
       \hline  ~ & PNG & JPEG & TIFF & PPM \\ \hline
-      PNG  & \includegraphics[width=0.24\textwidth]{A1/images/png_image} &
-             \includegraphics[width=0.24\textwidth]{A1/output/png_image_to_jpg} &
-             \includegraphics[width=0.24\textwidth]{A1/output/png_image_to_tiff} &
-             \includegraphics[width=0.24\textwidth]{A1/output/png_image_to_ppm} \\ \hline
-      JPG  & \includegraphics[width=0.24\textwidth]{A1/output/jpg_image_to_png} &
-             \includegraphics[width=0.24\textwidth]{A1/images/jpg_image} &
-             \includegraphics[width=0.24\textwidth]{A1/output/jpg_image_to_tiff} &
-             \includegraphics[width=0.24\textwidth]{A1/output/jpg_image_to_ppm} \\ \hline
-      TIFF & \includegraphics[width=0.24\textwidth]{A1/output/tiff_image_to_png} &
-             \includegraphics[width=0.24\textwidth]{A1/output/tiff_image_to_jpg} &
-             \includegraphics[width=0.24\textwidth]{A1/images/tiff_image} &
-             \includegraphics[width=0.24\textwidth]{A1/output/tiff_image_to_ppm} \\ \hline
-      PPM  & \includegraphics[width=0.24\textwidth]{A1/output/ppm_image_to_png} &
-             \includegraphics[width=0.24\textwidth]{A1/output/ppm_image_to_jpg} &
-             \includegraphics[width=0.24\textwidth]{A1/output/ppm_image_to_tiff} &
-             \includegraphics[width=0.24\textwidth]{A1/images/ppm_image} \\ \hline
+      PNG  & \includegraphics[width=0.24\textwidth]{images/png_image} &
+             \includegraphics[width=0.24\textwidth]{output/png_image_to_jpg} &
+             \includegraphics[width=0.24\textwidth]{output/png_image_to_tiff} &
+             \includegraphics[width=0.24\textwidth]{output/png_image_to_ppm} \\ \hline
+      JPG  & \includegraphics[width=0.24\textwidth]{output/jpg_image_to_png} &
+             \includegraphics[width=0.24\textwidth]{images/jpg_image} &
+             \includegraphics[width=0.24\textwidth]{output/jpg_image_to_tiff} &
+             \includegraphics[width=0.24\textwidth]{output/jpg_image_to_ppm} \\ \hline
+      TIFF & \includegraphics[width=0.24\textwidth]{output/tiff_image_to_png} &
+             \includegraphics[width=0.24\textwidth]{output/tiff_image_to_jpg} &
+             \includegraphics[width=0.24\textwidth]{images/tiff_image} &
+             \includegraphics[width=0.24\textwidth]{output/tiff_image_to_ppm} \\ \hline
+      PPM  & \includegraphics[width=0.24\textwidth]{output/ppm_image_to_png} &
+             \includegraphics[width=0.24\textwidth]{output/ppm_image_to_jpg} &
+             \includegraphics[width=0.24\textwidth]{output/ppm_image_to_tiff} &
+             \includegraphics[width=0.24\textwidth]{images/ppm_image} \\ \hline
     \end{tabular}
   }
   \caption{Matrix of images before and after conversion (left axis is input type; top axis is output type)}
@@ -292,15 +292,15 @@ int main(int argc, char* argv[]) {
         ymin=0, ymax=0.06
       ]
       \nextgroupplot
-      \addplot [fill=gray] table [col sep=comma] {A1/output/my_histogram.csv};
+      \addplot [fill=gray] table [col sep=comma] {output/my_histogram.csv};
       \nextgroupplot
-      \addplot [fill=gray] table [col sep=comma] {A1/output/cv_histogram.csv};
+      \addplot [fill=gray] table [col sep=comma] {output/cv_histogram.csv};
       \nextgroupplot
-      \addplot [fill=red] table [col sep=comma] {A1/output/r_histogram.csv};
+      \addplot [fill=red] table [col sep=comma] {output/r_histogram.csv};
       \nextgroupplot
-      \addplot [fill=green] table [col sep=comma] {A1/output/g_histogram.csv};
+      \addplot [fill=green] table [col sep=comma] {output/g_histogram.csv};
       \nextgroupplot
-      \addplot [fill=blue] table [col sep=comma] {A1/output/g_histogram.csv};
+      \addplot [fill=blue] table [col sep=comma] {output/g_histogram.csv};
     \end{groupplot}
   \end{tikzpicture}
   }
@@ -438,8 +438,8 @@ int main(int argc, char* argv[]) {
 
 \begin{figure}[h]
   \centering
-  \includegraphics[width=0.49\textwidth]{A1/images/base_image} \hfill%
-  \includegraphics[width=0.49\textwidth]{A1/output/image_inverted}
+  \includegraphics[width=0.49\textwidth]{images/base_image} \hfill%
+  \includegraphics[width=0.49\textwidth]{output/image_inverted}
   \caption{Original image (left) and image inverted (right)}
   \label{fig:image_inverted}
 \end{figure}
@@ -467,7 +467,7 @@ if (argc == 2 || (argc == 3 && std::string("display") == argv[2])) {
 } else if (argc == 3 && std::string("nodisplay") == (argv[2])) {
   display = false;
 } else {
-  std::cout << "Usage: `A1_Q4 <data_directory> [nodisplay|display]`" << std::endl
+  std::cout << "Usage: `" << argv[0] << " <data_dir> [nodisplay|display]`" << std::endl
             << "  where data_directory contains subdirectories `images` and `output`"
             << "  and nodisplay or display is optional (display is on by default)"
             << std::endl;
