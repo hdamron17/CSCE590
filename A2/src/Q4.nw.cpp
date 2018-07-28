@@ -1,6 +1,6 @@
 @ \section*{Part 4: Correlation}
 
-The goal of this section is to implement the correlation operator as defined in Equation~\ref{eqn:correlation} where $I$ is the image, $T$ is the template image, and $M,N$ are height and width of $T$.
+The goal of this section is to implement the correlation operator ($\circ$) as defined in Equation~\ref{eqn:correlation} where $I$ is the image, $T$ is the template image, and $M,N$ are height and width of $T$.
 
 \begin{equation} \label{eqn:correlation}
   T(y, x) \circ I(y, x) = \dfrac{1}{MN} \sum_{m=0}^{M} \sum_{n=0}^{N} (T(m, n) \cdot I(y+m, x+n))
@@ -12,10 +12,11 @@ The goal of this section is to implement the correlation operator as defined in 
   T(y, x) \circ I(y, x) = \dfrac{1}{MN} \dfrac{\displaystyle \sum_{m=0}^{M} \sum_{n=0}^{N} (T(m, n) \cdot I(y+m, x+n))}{\displaystyle \sqrt{\sum_{m=0}^{M} \sum_{n=0}^{N} T(m, n)^2 \cdot \sum_{m=0}^{M} \sum_{n=0}^{N} I(y+m, x+n)^2}}
 \end{equation}
 
-<<Q4.cpp>>=
-<<Include>>
-<<Global constants>>
+@ \subsection*{Padding}
+We begin by providing the [[pad]] function which allows various types of image padding.
+This implementation only uses zero padding and truncation, but the enumeration [[PadType]] would make it easy to provide alternative padding schemes.
 
+<<[[pad]] Function>>=
 enum PadType {
   NONE = 0,
   ZEROS = 1,
@@ -23,7 +24,6 @@ enum PadType {
   REPEAT_SEQUENCE = 3
 };
 
-// Size is an odd number for size of kernel
 template<PadType pad_type>
 cv::Mat pad(const cv::Mat& mat, cv::Size size) {
   pad<pad_type>(mat, size);
@@ -45,6 +45,13 @@ cv::Mat pad<PadType::ZEROS>(const cv::Mat& mat, cv::Size size) {
   return padded;
 }
 
+@ \subsection*{Correlation Operator}
+
+Next we implement the [[correlate]] function which allows both traditional and normalized correlation.
+The implementation creates a padded image then loops over all pixel locations which are central enough for the full correlation template to be applied.
+The pixel-wise operator follows Equation~\ref{eqn:correlation} for traditional correlation and Equation~\ref{eqn:norm_correlation} for normalized correlation.
+
+<<[[correlate]] Function>>=
 template<typename T_in, typename T_out, PadType pad_type=PadType::NONE>
 cv::Mat_<T_out> correlate(const cv::Mat& mat, const cv::Mat& templ, bool normed=false) {
   cv::Size templ_size = templ.size();
@@ -82,17 +89,15 @@ cv::Mat_<T_out> correlate(const cv::Mat& mat, const cv::Mat& templ, bool normed=
   return correlated;
 }
 
+@ \subsection*{Visualization}
+
+To provide a better visualization for the [[correlate]] function, we provide functions which find the location of maximum intensity in the correlation image and draw a rectangle on the original image corresponding to that location of maximum correlation.
+
+<<Annotation Functions>>=
 void drawRect(cv::Mat* mat, const cv::Point& pt, const cv::Size& size) {
   cv::Point corner(pt.x - size.width / 2, pt.y - size.height / 2);
   cv::rectangle(*mat, cv::Rect(corner, size), 0);
   cv::drawMarker(*mat, pt, 0);
-}
-
-template<typename T>
-cv::Mat in_range(const cv::Mat& image) {
-  double min_p, max_p;
-  cv::minMaxLoc(image, &min_p, &max_p);
-  return (image - min_p) / (max_p - min_p) * std::numeric_limits<T>::max();
 }
 
 cv::Mat annotate_correlation(const cv::Mat& image, const cv::Mat& correlation,
@@ -103,6 +108,29 @@ cv::Mat annotate_correlation(const cv::Mat& image, const cv::Mat& correlation,
   drawRect(&im_copy, max_loc, templ_size);
   return im_copy;
 }
+
+@ The [[in_range]] function is provided for visualization to scale the correlation image to span the whole range of its integer type.
+
+<<[[in_range]] Function>>=
+template<typename T>
+cv::Mat in_range(const cv::Mat& image) {
+  double min_p, max_p;
+  cv::minMaxLoc(image, &min_p, &max_p);
+  return (image - min_p) / (max_p - min_p) * std::numeric_limits<T>::max();
+}
+
+@ \subsection*{Implementation of [[main]]}
+
+Finally, the [[main]] function is implemented to read several images and apply the correlation operator on them.
+The OpenCV equivalent is provided to validate each operation, but the results are not included in this report.
+
+<<Q4.cpp>>=
+<<Include>>
+<<Global constants>>
+<<[[pad]] Function>>
+<<[[correlate]] Function>>
+<<Annotation Functions>>
+<<[[in_range]] Function>>
 
 int main(int argc, char* argv[]) {
   <<Command line args>>
@@ -121,39 +149,57 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  cv::Mat correlation = correlate<uint8_t, float, PadType::ZEROS>(image, templ);
-  cv::Mat correlation_normed = correlate<uint8_t, float, PadType::ZEROS>(image, templ, true);
+  cv::Mat correlation
+      = correlate<uint8_t, float, PadType::ZEROS>(image, templ);
+  cv::Mat correlation_normed
+      = correlate<uint8_t, float, PadType::ZEROS>(image, templ, true);
 
-  cv::Mat correlation_display = in_range<uint8_t>(correlation);
-  cv::Mat correlation_annotated = annotate_correlation(image, correlation, templ.size());
+  cv::Mat correlation_display
+      = in_range<uint8_t>(correlation);
+  cv::Mat correlation_annotated
+      = annotate_correlation(image, correlation, templ.size());
 
-  cv::Mat correlation_normed_display = in_range<uint8_t>(correlation_normed);
-  cv::Mat correlation_normed_annotated = annotate_correlation(image, correlation_normed, templ.size());
+  cv::Mat correlation_normed_display
+      = in_range<uint8_t>(correlation_normed);
+  cv::Mat correlation_normed_annotated
+      = annotate_correlation(image, correlation_normed, templ.size());
 
-  cv::imwrite(path + "/output/correlation.png", correlation_display, PNG_COMPRESSION);
-  cv::imwrite(path + "/output/correlation_annotated.png", correlation_annotated, PNG_COMPRESSION);
+  cv::imwrite(path + "/output/correlation.png",
+              correlation_display, PNG_COMPRESSION);
+  cv::imwrite(path + "/output/correlation_annotated.png",
+              correlation_annotated, PNG_COMPRESSION);
 
-  cv::imwrite(path + "/output/correlation_normed.png", correlation_normed_display, PNG_COMPRESSION);
-  cv::imwrite(path + "/output/correlation_normed_annotated.png", correlation_normed_annotated, PNG_COMPRESSION);
+  cv::imwrite(path + "/output/correlation_normed.png",
+              correlation_normed_display, PNG_COMPRESSION);
+  cv::imwrite(path + "/output/correlation_normed_annotated.png",
+              correlation_normed_annotated, PNG_COMPRESSION);
 
   /* Comparable OpenCV operations provided for validation */
-  /*
   cv::Mat cv_correlation, cv_correlation_normed;
-  cv::matchTemplate(pad<PadType::ZEROS>(image, templ.size()), templ, cv_correlation, CV_TM_CCORR);
-  cv::matchTemplate(pad<PadType::ZEROS>(image, templ.size()), templ, cv_correlation_normed, CV_TM_CCORR_NORMED);
+  cv::matchTemplate(pad<PadType::ZEROS>(image, templ.size()), templ,
+                                        cv_correlation, CV_TM_CCORR);
+  cv::matchTemplate(pad<PadType::ZEROS>(image, templ.size()), templ,
+                                        cv_correlation_normed, CV_TM_CCORR_NORMED);
 
-  cv::Mat cv_correlation_display = in_range<uint8_t>(cv_correlation);
-  cv::Mat cv_correlation_annotated = annotate_correlation(image, cv_correlation, templ.size());
+  cv::Mat cv_correlation_display
+      = in_range<uint8_t>(cv_correlation);
+  cv::Mat cv_correlation_annotated
+      = annotate_correlation(image, cv_correlation, templ.size());
 
-  cv::Mat cv_correlation_normed_display = in_range<uint8_t>(cv_correlation_normed);
-  cv::Mat cv_correlation_normed_annotated = annotate_correlation(image, cv_correlation_normed, templ.size());
+  cv::Mat cv_correlation_normed_display
+      = in_range<uint8_t>(cv_correlation_normed);
+  cv::Mat cv_correlation_normed_annotated
+      = annotate_correlation(image, cv_correlation_normed, templ.size());
 
-  cv::imwrite(path + "/output/cv_correlation.png", cv_correlation_display, PNG_COMPRESSION);
-  cv::imwrite(path + "/output/cv_correlation_annotated.png", cv_correlation_annotated, PNG_COMPRESSION);
+  cv::imwrite(path + "/output/cv_correlation.png",
+              cv_correlation_display, PNG_COMPRESSION);
+  cv::imwrite(path + "/output/cv_correlation_annotated.png",
+              cv_correlation_annotated, PNG_COMPRESSION);
 
-  cv::imwrite(path + "/output/cv_correlation_normed.png", cv_correlation_normed_display, PNG_COMPRESSION);
-  cv::imwrite(path + "/output/cv_correlation_normed_annotated.png", cv_correlation_normed_annotated, PNG_COMPRESSION);
-  */
+  cv::imwrite(path + "/output/cv_correlation_normed.png",
+              cv_correlation_normed_display, PNG_COMPRESSION);
+  cv::imwrite(path + "/output/cv_correlation_normed_annotated.png",
+              cv_correlation_normed_annotated, PNG_COMPRESSION);
 
   if (display) {
     cv::imshow("Correlation", correlation_display);
@@ -169,3 +215,31 @@ int main(int argc, char* argv[]) {
     cv::waitKey(0);
   }
 }
+
+@ \subsection*{Results}
+
+The results of the correlation operator can be seen in Figure~\ref{fig:correlation}.
+
+\newlength{\correlationheight}
+\setlength{\correlationheight}{\heightof{\includegraphics[width=0.33\textwidth]{images/for_correlation_small}}}
+
+\begin{figure}[!ht]
+  \begin{tabular}{ccc}
+    \subfloat[\label{subfig:correlation_image}]{\includegraphics[width=0.3\textwidth]{images/for_correlation_small}} &
+    \subfloat[\label{subfig:correlation}]{\includegraphics[width=0.3\textwidth]{output/correlation}} &
+    \subfloat[\label{subfig:correlation_norm}]{\includegraphics[width=0.3\textwidth]{output/correlation_annotated}} \\
+    \subfloat[\label{subfig:correlation_kernel}]{\includegraphics[width=0.3\textwidth,height=\correlationheight,keepaspectratio]{images/for_correlation_copy_template_small}} &
+    \subfloat[\label{subfig:correlation_annotated}]{\includegraphics[width=0.3\textwidth]{output/correlation_normed}} &
+    \subfloat[\label{subfig:correlation_norm_annotated}]{\includegraphics[width=0.3\textwidth]{output/correlation_normed_annotated}} \\
+  \end{tabular}
+
+  \caption{Illustration of correlation process.
+    \protect\subref{subfig:correlation_image} Original greyscale image.
+    \protect\subref{subfig:correlation} Result of normal correlation using zero padding.
+    \protect\subref{subfig:correlation_annotated} Annotation of region with highest correlation.
+    \protect\subref{subfig:correlation_kernel} Template used in correlation, enlarged.
+    \protect\subref{subfig:correlation_norm} Result of normalized correlation using zero padding.
+    \protect\subref{subfig:correlation_norm_annotated} Annotation of region with highest normalized correlation.
+  }
+  \label{fig:correlation}
+\end{figure}

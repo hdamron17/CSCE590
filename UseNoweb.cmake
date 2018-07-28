@@ -94,24 +94,29 @@ function(pdf_compress input_pdf)
   )
 endfunction()
 
-find_program(MAGICK_CMD magick)
+find_program(MAGICK_CMD convert)
 if(${MAGICK_CMD} STREQUAL "MAGICK_CMD-NOTFOUND")
-  message("Unable to find command magick")
-else()
-  function(small_images target_prefix images)
+  message("Unable to find magick command convert")
+  set(NO_MAGICK true)
+endif()
+
+if(NOT IMAGE_SIZE)
+  set(IMAGE_SIZE 800)
+endif()
+
+function(small_images target_prefix images)
+  if(NO_MAGICK)
+    message(AUTHOR_WARNING "Cannot use function shrink_images without access to Image Magick")
+  else()
     add_custom_target(${target_prefix}_shrink_images)
     foreach(image ${images})
       add_custom_command(
         TARGET ${target_prefix}_shrink_images
-        COMMAND ${MAGICK_CMD} convert -resize ${IMAGE_SIZE}x${IMAGE_SIZE}\\> ${image} ${MAGICK_WRITE} ${image}
+        COMMAND ${MAGICK_CMD} -resize ${IMAGE_SIZE}x${IMAGE_SIZE}\\> ${image} ${MAGICK_WRITE} ${image}
       )
     endforeach()
-  endfunction()
-
-  if(NOT IMAGE_SIZE)
-    set(IMAGE_SIZE 800)
   endif()
-endif()
+endfunction()
 
 macro(clean_noweb)
   get_filename_component(NOWEB_ABS ${NOWEB_OUTPUT_PATH} ABSOLUTE)

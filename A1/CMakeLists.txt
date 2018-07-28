@@ -1,7 +1,4 @@
-file(RELATIVE_PATH REL_SRC_DIR ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
-if(NOT REL_SRC_DIR)
-  set(REL_SRC_DIR .)
-endif()
+get_src_rel_path(REL_SRC_DIR)
 
 file(GLOB A1_IMAGES images/*.jpg images/*.png images/*.ppm images/*.tiff)
 small_images(A1 "${A1_IMAGES}")

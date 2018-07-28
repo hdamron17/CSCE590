@@ -30,3 +30,15 @@ if (argc == 2 || (argc == 3 && std::string("display") == argv[2])) {
   return 1;
 }
 path = argv[1];
+
+<<[[im_load]] Function>>=
+template<typename T>
+bool im_load(const std::string& im_path, cv::Mat_<T>* mat, int mode=cv::IMREAD_COLOR) {
+  cv::Mat tmp = cv::imread(im_path, mode);
+  if(!tmp.data) {
+    std::cout << "Failed to read image " << im_path << std::endl;
+    return false;
+  }
+  tmp.assignTo(*mat, cv::traits::Type<T>::value);
+  return true;
+}
