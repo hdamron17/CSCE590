@@ -44,4 +44,4 @@ function(add_subdirectories)
   endforeach()
 endfunction()
 
-add_subdirectories(A1 A2 A3)
+add_subdirectories(A1 A2 A3 A4)

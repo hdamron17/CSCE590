@@ -1,0 +1,33 @@
+\documentclass[10pt]{article}
+\usepackage{noweb}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{subfig}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{amsmath}
+\usepackage{calc}
+\usepackage{longtable}
+\usepackage{pgfplotstable}
+\usepackage{booktabs}
+
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.8}
+\usepgfplotslibrary{groupplots}
+
+\def\nwendcode{\endtrivlist \endgroup}
+\let\nwdocspar=\par
+
+\title{CSCE 590 Assignment 4}
+\author{Hunter Damron}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\input{src/Q1.tex}
+\input{noweb/Q2.tex}
+\input{noweb/Common.tex}
+
+\end{document}
